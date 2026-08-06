@@ -41,7 +41,17 @@ export function boardsCollection() {
   return collection(db, 'boards')
 }
 
-/** boards/<boardId> document reference */
+/** boards/<boardId> document reference (metadata only) */
 export function boardDoc(boardId: string) {
   return doc(db, 'boards', boardId)
+}
+
+/** boards/<boardId>/notes subcollection */
+export function notesCollection(boardId: string) {
+  return collection(db, 'boards', boardId, 'notes')
+}
+
+/** boards/<boardId>/notes/<noteId> document reference */
+export function noteDoc(boardId: string, noteId: string) {
+  return doc(db, 'boards', boardId, 'notes', noteId)
 }
