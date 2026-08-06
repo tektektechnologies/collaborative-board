@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { serverTimestamp } from 'firebase/firestore'
 import { useBoard } from '../hooks/useBoard'
-import { usePresence } from '../hooks/usePresence'
+import { usePresence, type Presence } from '../hooks/usePresence'
 import type { Note } from '../types'
 import NoteView from './NoteView'
 import './BoardPage.css'
@@ -17,14 +17,46 @@ export const NOTE_COLORS = [
   '#e9d5ff', // purple
 ]
 
+const PRESENCE_COLORS = [
+  '#2563eb',
+  '#dc2626',
+  '#059669',
+  '#d97706',
+  '#7c3aed',
+  '#db2777',
+]
+
+function presenceColor(clientId: string): string {
+  let hash = 0
+  for (let i = 0; i < clientId.length; i += 1) {
+    hash = (hash + clientId.charCodeAt(i) * (i + 1)) % PRESENCE_COLORS.length
+  }
+  return PRESENCE_COLORS[hash]
+}
+
+/** Short label for cursors / chips, e.g. "Guest a3f2" → "Ga3f" */
+function presenceLabel(displayName: string): string {
+  const compact = displayName.replace(/\s+/g, '')
+  return compact.slice(0, 4)
+}
+
+function presenceSummary(peerCount: number): string {
+  if (peerCount === 0) return 'Only you are here'
+  if (peerCount === 1) return 'You and 1 other are here'
+  return `${peerCount + 1} people on this board`
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const { notes, loading, error, addNote, updateNote, deleteNote } = useBoard(
     boardId ?? null,
   )
-  const { displayName, peers, setCursor, setActiveNoteId } = usePresence(
-    boardId ?? null,
-  )
+  const { clientId, displayName, peers, setCursor, setActiveNoteId } =
+    usePresence(boardId ?? null)
   const [copyStatus, setCopyStatus] = useState('')
 
   function handleAddNote() {
@@ -65,8 +97,11 @@ export default function BoardPage() {
   function handleCanvasPointerMove(
     event: React.PointerEvent<HTMLDivElement>,
   ) {
-    const rect = event.currentTarget.getBoundingClientRect()
-    setCursor(event.clientX - rect.left, event.clientY - rect.top)
+    const canvas = event.currentTarget
+    const rect = canvas.getBoundingClientRect()
+    const x = clamp(event.clientX - rect.left, 0, canvas.clientWidth)
+    const y = clamp(event.clientY - rect.top, 0, canvas.clientHeight)
+    setCursor(x, y)
   }
 
   async function handleCopyLink() {
@@ -79,7 +114,45 @@ export default function BoardPage() {
     window.setTimeout(() => setCopyStatus(''), 2000)
   }
 
-  const peopleCount = peers.length + 1
+  function renderPresenceChip(person: {
+    clientId: string
+    displayName: string
+    isSelf?: boolean
+  }) {
+    const color = presenceColor(person.clientId)
+    return (
+      <li key={person.clientId} className="presence-chip" title={person.displayName}>
+        <span className="presence-dot" style={{ backgroundColor: color }} />
+        <span>
+          {person.isSelf ? `You (${presenceLabel(person.displayName)})` : person.displayName}
+        </span>
+      </li>
+    )
+  }
+
+  function renderRemoteCursor(peer: Presence) {
+    if (peer.cursorX == null || peer.cursorY == null) return null
+
+    const color = presenceColor(peer.clientId)
+    const label = presenceLabel(peer.displayName)
+
+    return (
+      <div
+        key={`cursor-${peer.clientId}`}
+        className="remote-cursor"
+        style={{
+          left: peer.cursorX,
+          top: peer.cursorY,
+          backgroundColor: color,
+        }}
+        title={peer.displayName}
+      >
+        <span className="remote-cursor-label" style={{ backgroundColor: color }}>
+          {label}
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div className="board-page">
@@ -105,16 +178,20 @@ export default function BoardPage() {
       </div>
 
       <div className="presence-bar" aria-live="polite">
-        <span>
-          {peopleCount} on this board · you are {displayName}
-        </span>
-        {peers.length > 0 && (
-          <ul className="presence-list">
-            {peers.map((peer) => (
-              <li key={peer.clientId}>{peer.displayName}</li>
-            ))}
-          </ul>
-        )}
+        <strong className="presence-summary">{presenceSummary(peers.length)}</strong>
+        <ul className="presence-list">
+          {renderPresenceChip({
+            clientId,
+            displayName,
+            isSelf: true,
+          })}
+          {peers.map((peer) =>
+            renderPresenceChip({
+              clientId: peer.clientId,
+              displayName: peer.displayName,
+            }),
+          )}
+        </ul>
       </div>
 
       {copyStatus && <p className="board-status">{copyStatus}</p>}
@@ -144,18 +221,7 @@ export default function BoardPage() {
             />
           ))}
 
-        {peers.map((peer) =>
-          peer.cursorX != null && peer.cursorY != null ? (
-            <div
-              key={`cursor-${peer.clientId}`}
-              className="remote-cursor"
-              style={{ left: peer.cursorX, top: peer.cursorY }}
-              title={peer.displayName}
-            >
-              <span className="remote-cursor-label">{peer.displayName}</span>
-            </div>
-          ) : null,
-        )}
+        {peers.map((peer) => renderRemoteCursor(peer))}
       </div>
     </div>
   )
