@@ -89,7 +89,9 @@ export default function NoteView({
     if (!noteEl?.offsetParent) {
       return { x: 0, y: 0 }
     }
-    const canvasRect = (noteEl.offsetParent as HTMLElement).getBoundingClientRect()
+    const canvasRect = (
+      noteEl.offsetParent as HTMLElement
+    ).getBoundingClientRect()
     return {
       x: event.clientX - canvasRect.left,
       y: event.clientY - canvasRect.top,

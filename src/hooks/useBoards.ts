@@ -6,6 +6,7 @@ import {
   onSnapshot,
   serverTimestamp,
   setDoc,
+  updateDoc,
   writeBatch,
 } from 'firebase/firestore'
 import {
@@ -16,6 +17,7 @@ import { db, boardDoc, boardsCollection, notesCollection, presenceCollection } f
 
 export type BoardSummary = {
   id: string
+  name: string
   noteCount: number
   createdAt: Date | null
   hostClientId: string | null
@@ -75,6 +77,10 @@ export function useBoards() {
 
                 return {
                   id: boardSnapshot.id,
+                  name:
+                    typeof data.name === 'string' && data.name.trim()
+                      ? data.name.trim()
+                      : 'Untitled board',
                   noteCount: notesCountSnap.data().count,
                   createdAt:
                     createdAtRaw && typeof createdAtRaw.toDate === 'function'
@@ -126,11 +132,18 @@ export function useBoards() {
     const hostDisplayName = getOrCreateDisplayName(hostClientId)
 
     await setDoc(boardDoc(boardId), {
+      name: 'Untitled board',
       createdAt: serverTimestamp(),
       hostClientId,
       hostDisplayName,
     })
     return boardId
+  }, [])
+
+  const renameBoard = useCallback(async (boardId: string, name: string) => {
+    const trimmed = name.trim() || 'Untitled board'
+    // Only updates the display name — board URL / id stays the same.
+    await updateDoc(boardDoc(boardId), { name: trimmed })
   }, [])
 
   const deleteBoard = useCallback(async (boardId: string) => {
@@ -140,5 +153,13 @@ export function useBoards() {
     await deleteDoc(boardDoc(boardId))
   }, [])
 
-  return { boards, loading, error, createBoard, deleteBoard, currentClientId }
+  return {
+    boards,
+    loading,
+    error,
+    createBoard,
+    renameBoard,
+    deleteBoard,
+    currentClientId,
+  }
 }

@@ -60,10 +60,12 @@ export default function BoardPage() {
     usePresence(boardId ?? null)
   const [copyStatus, setCopyStatus] = useState('')
   const [hostClientId, setHostClientId] = useState<string | null>(null)
+  const [boardName, setBoardName] = useState('Untitled board')
 
   useEffect(() => {
     if (!boardId) {
       setHostClientId(null)
+      setBoardName('Untitled board')
       return
     }
 
@@ -71,6 +73,11 @@ export default function BoardPage() {
       const data = snapshot.data()
       setHostClientId(
         typeof data?.hostClientId === 'string' ? data.hostClientId : null,
+      )
+      setBoardName(
+        typeof data?.name === 'string' && data.name.trim()
+          ? data.name.trim()
+          : 'Untitled board',
       )
     })
 
@@ -192,7 +199,8 @@ export default function BoardPage() {
           <Link to="/" className="board-home-link">
             ← Home
           </Link>
-          <h1>Board: {boardId}</h1>
+          <h1>{boardName}</h1>
+          <p className="board-id-subtitle">Board id: {boardId}</p>
         </div>
         <div className="board-actions">
           <button type="button" onClick={handleCopyLink} disabled={!boardId}>
