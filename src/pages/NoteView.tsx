@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Note } from './BoardPage'
+import { NOTE_COLORS, type Note } from './BoardPage'
 
 type NoteViewProps = {
   note: Note
   onMove: (id: string, x: number, y: number) => void
   onUpdateText: (id: string, text: string) => void
+  onUpdateColor: (id: string, color: string) => void
 }
 
-export default function NoteView({ note, onMove, onUpdateText }: NoteViewProps) {
+export default function NoteView({
+  note,
+  onMove,
+  onUpdateText,
+  onUpdateColor,
+}: NoteViewProps) {
   const noteRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x: note.x, y: note.y })
   const [text, setText] = useState(note.text)
@@ -103,6 +109,19 @@ export default function NoteView({ note, onMove, onUpdateText }: NoteViewProps) 
         onBlur={commitText}
         onKeyDown={handleTextKeyDown}
       />
+      <div className="note-color-swatches" role="group" aria-label="Note color">
+        {NOTE_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            className={`note-color-swatch${note.color === color ? ' note-color-swatch--selected' : ''}`}
+            style={{ backgroundColor: color }}
+            aria-label={`Set color ${color}`}
+            aria-pressed={note.color === color}
+            onClick={() => onUpdateColor(note.id, color)}
+          />
+        ))}
+      </div>
     </div>
   )
 }

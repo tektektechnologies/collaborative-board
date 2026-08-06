@@ -11,6 +11,14 @@ export type Note = {
   color: string
 }
 
+export const NOTE_COLORS = [
+  '#fef08a', // yellow
+  '#bfdbfe', // blue
+  '#bbf7d0', // green
+  '#fecaca', // red
+  '#e9d5ff', // purple
+]
+
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const [notes, setNotes] = useState<Note[]>([])
@@ -23,7 +31,7 @@ export default function BoardPage() {
         x: 100,
         y: 100,
         text: 'New note',
-        color: '#fef08a',
+        color: NOTE_COLORS[0],
       },
     ])
   }
@@ -37,6 +45,12 @@ export default function BoardPage() {
   function handleUpdateNoteText(id: string, text: string) {
     setNotes((prev) =>
       prev.map((note) => (note.id === id ? { ...note, text } : note)),
+    )
+  }
+
+  function handleUpdateNoteColor(id: string, color: string) {
+    setNotes((prev) =>
+      prev.map((note) => (note.id === id ? { ...note, color } : note)),
     )
   }
 
@@ -54,6 +68,7 @@ export default function BoardPage() {
             note={note}
             onMove={handleMoveNote}
             onUpdateText={handleUpdateNoteText}
+            onUpdateColor={handleUpdateNoteColor}
           />
         ))}
       </div>
