@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { serverTimestamp } from 'firebase/firestore'
 import { useBoard } from '../hooks/useBoard'
+import { usePresence } from '../hooks/usePresence'
 import type { Note } from '../types'
 import NoteView from './NoteView'
 import './BoardPage.css'
@@ -19,6 +20,9 @@ export const NOTE_COLORS = [
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const { notes, loading, error, addNote, updateNote, deleteNote } = useBoard(
+    boardId ?? null,
+  )
+  const { displayName, peers, setCursor, setActiveNoteId } = usePresence(
     boardId ?? null,
   )
   const [copyStatus, setCopyStatus] = useState('')
@@ -58,6 +62,13 @@ export default function BoardPage() {
     void deleteNote(id)
   }
 
+  function handleCanvasPointerMove(
+    event: React.PointerEvent<HTMLDivElement>,
+  ) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    setCursor(event.clientX - rect.left, event.clientY - rect.top)
+  }
+
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href)
@@ -67,6 +78,8 @@ export default function BoardPage() {
     }
     window.setTimeout(() => setCopyStatus(''), 2000)
   }
+
+  const peopleCount = peers.length + 1
 
   return (
     <div className="board-page">
@@ -91,6 +104,19 @@ export default function BoardPage() {
         </div>
       </div>
 
+      <div className="presence-bar" aria-live="polite">
+        <span>
+          {peopleCount} on this board · you are {displayName}
+        </span>
+        {peers.length > 0 && (
+          <ul className="presence-list">
+            {peers.map((peer) => (
+              <li key={peer.clientId}>{peer.displayName}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {copyStatus && <p className="board-status">{copyStatus}</p>}
       {loading && <p className="board-status">Loading board…</p>}
       {error && (
@@ -99,7 +125,10 @@ export default function BoardPage() {
         </p>
       )}
 
-      <div className="board-canvas">
+      <div
+        className="board-canvas"
+        onPointerMove={handleCanvasPointerMove}
+      >
         {!loading &&
           !error &&
           notes.map((note) => (
@@ -110,8 +139,23 @@ export default function BoardPage() {
               onUpdateText={handleUpdateNoteText}
               onUpdateColor={handleUpdateNoteColor}
               onDelete={handleDeleteNote}
+              onFocusNote={() => setActiveNoteId(note.id)}
+              onBlurNote={() => setActiveNoteId(null)}
             />
           ))}
+
+        {peers.map((peer) =>
+          peer.cursorX != null && peer.cursorY != null ? (
+            <div
+              key={`cursor-${peer.clientId}`}
+              className="remote-cursor"
+              style={{ left: peer.cursorX, top: peer.cursorY }}
+              title={peer.displayName}
+            >
+              <span className="remote-cursor-label">{peer.displayName}</span>
+            </div>
+          ) : null,
+        )}
       </div>
     </div>
   )

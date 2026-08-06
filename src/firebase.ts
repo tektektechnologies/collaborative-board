@@ -55,3 +55,13 @@ export function notesCollection(boardId: string) {
 export function noteDoc(boardId: string, noteId: string) {
   return doc(db, 'boards', boardId, 'notes', noteId)
 }
+
+/** boards/<boardId>/presence subcollection */
+export function presenceCollection(boardId: string) {
+  return collection(db, 'boards', boardId, 'presence')
+}
+
+/** boards/<boardId>/presence/<clientId> document reference */
+export function presenceDoc(boardId: string, clientId: string) {
+  return doc(db, 'boards', boardId, 'presence', clientId)
+}

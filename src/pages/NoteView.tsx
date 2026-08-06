@@ -11,6 +11,8 @@ type NoteViewProps = {
   onUpdateText: (id: string, text: string) => void
   onUpdateColor: (id: string, color: string) => void
   onDelete: (id: string) => void
+  onFocusNote?: () => void
+  onBlurNote?: () => void
 }
 
 function clampPosition(
@@ -33,6 +35,8 @@ export default function NoteView({
   onUpdateText,
   onUpdateColor,
   onDelete,
+  onFocusNote,
+  onBlurNote,
 }: NoteViewProps) {
   const noteRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x: note.x, y: note.y })
@@ -155,7 +159,11 @@ export default function NoteView({
       <textarea
         value={text}
         onChange={(event) => setText(event.target.value)}
-        onBlur={commitText}
+        onFocus={() => onFocusNote?.()}
+        onBlur={() => {
+          commitText()
+          onBlurNote?.()
+        }}
         onKeyDown={handleTextKeyDown}
       />
       <div className="note-color-swatches" role="group" aria-label="Note color">
