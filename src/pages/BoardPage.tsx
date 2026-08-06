@@ -1,15 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { loadNotes, saveNotes, type Note } from '../notesStorage'
 import NoteView from './NoteView'
 import './BoardPage.css'
 
-export type Note = {
-  id: string
-  x: number
-  y: number
-  text: string
-  color: string
-}
+export type { Note }
 
 export const NOTE_COLORS = [
   '#fef08a', // yellow
@@ -22,6 +17,20 @@ export const NOTE_COLORS = [
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const [notes, setNotes] = useState<Note[]>([])
+  const [hasLoaded, setHasLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!boardId) return
+
+    setHasLoaded(false)
+    setNotes(loadNotes(boardId))
+    setHasLoaded(true)
+  }, [boardId])
+
+  useEffect(() => {
+    if (!boardId || !hasLoaded) return
+    saveNotes(boardId, notes)
+  }, [boardId, notes, hasLoaded])
 
   function handleAddNote() {
     setNotes((prev) => [
