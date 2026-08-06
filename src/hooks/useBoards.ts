@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
-import { boardDoc, boardsCollection } from '../firebase'
+import {
+  getCountFromServer,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore'
+import { boardDoc, boardsCollection, notesCollection } from '../firebase'
 
 export type BoardSummary = {
   id: string
@@ -17,38 +22,56 @@ export function useBoards() {
     const unsubscribe = onSnapshot(
       boardsCollection(),
       (snapshot) => {
-        const nextBoards: BoardSummary[] = snapshot.docs.map((boardSnapshot) => {
-          const data = boardSnapshot.data()
-          const createdAtRaw = data.createdAt
+        void (async () => {
+          try {
+            const nextBoards: BoardSummary[] = await Promise.all(
+              snapshot.docs.map(async (boardSnapshot) => {
+                const data = boardSnapshot.data()
+                const createdAtRaw = data.createdAt
 
-          // Older boards were created without createdAt — backfill once
-          if (!createdAtRaw) {
-            void setDoc(
-              boardSnapshot.ref,
-              { createdAt: serverTimestamp() },
-              { merge: true },
+                // Older boards were created without createdAt — backfill once
+                if (!createdAtRaw) {
+                  void setDoc(
+                    boardSnapshot.ref,
+                    { createdAt: serverTimestamp() },
+                    { merge: true },
+                  )
+                }
+
+                // Count notes from the subcollection (not the old array field)
+                const notesCountSnap = await getCountFromServer(
+                  notesCollection(boardSnapshot.id),
+                )
+
+                return {
+                  id: boardSnapshot.id,
+                  noteCount: notesCountSnap.data().count,
+                  createdAt:
+                    createdAtRaw && typeof createdAtRaw.toDate === 'function'
+                      ? createdAtRaw.toDate()
+                      : null,
+                }
+              }),
             )
+
+            nextBoards.sort((a, b) => {
+              const aTime = a.createdAt?.getTime() ?? 0
+              const bTime = b.createdAt?.getTime() ?? 0
+              return bTime - aTime
+            })
+
+            setBoards(nextBoards)
+            setLoading(false)
+            setError(null)
+          } catch (loadError) {
+            setError(
+              loadError instanceof Error
+                ? loadError
+                : new Error('Failed to load boards'),
+            )
+            setLoading(false)
           }
-
-          return {
-            id: boardSnapshot.id,
-            noteCount: Array.isArray(data.notes) ? data.notes.length : 0,
-            createdAt:
-              createdAtRaw && typeof createdAtRaw.toDate === 'function'
-                ? createdAtRaw.toDate()
-                : null,
-          }
-        })
-
-        nextBoards.sort((a, b) => {
-          const aTime = a.createdAt?.getTime() ?? 0
-          const bTime = b.createdAt?.getTime() ?? 0
-          return bTime - aTime
-        })
-
-        setBoards(nextBoards)
-        setLoading(false)
-        setError(null)
+        })()
       },
       (snapshotError) => {
         setError(snapshotError)
@@ -61,8 +84,8 @@ export function useBoards() {
 
   const createBoard = useCallback(async () => {
     const boardId = crypto.randomUUID()
+    // Metadata only — notes live in boards/{boardId}/notes
     await setDoc(boardDoc(boardId), {
-      notes: [],
       createdAt: serverTimestamp(),
     })
     return boardId

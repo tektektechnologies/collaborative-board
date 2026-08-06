@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { serverTimestamp } from 'firebase/firestore'
 import { useBoard } from '../hooks/useBoard'
 import type { Note } from '../types'
 import NoteView from './NoteView'
@@ -32,15 +33,25 @@ export default function BoardPage() {
   }
 
   function handleMoveNote(id: string, x: number, y: number) {
-    void updateNote(id, { x, y })
+    void updateNote(id, {
+      x,
+      y,
+      updatedAt: serverTimestamp(),
+    })
   }
 
   function handleUpdateNoteText(id: string, text: string) {
-    void updateNote(id, { text })
+    void updateNote(id, {
+      text,
+      updatedAt: serverTimestamp(),
+    })
   }
 
   function handleUpdateNoteColor(id: string, color: string) {
-    void updateNote(id, { color })
+    void updateNote(id, {
+      color,
+      updatedAt: serverTimestamp(),
+    })
   }
 
   function handleDeleteNote(id: string) {

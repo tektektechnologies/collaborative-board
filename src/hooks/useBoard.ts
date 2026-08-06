@@ -7,10 +7,16 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  type FieldValue,
   type Timestamp,
 } from 'firebase/firestore'
 import { noteDoc, notesCollection } from '../firebase'
 import type { Note } from '../types'
+
+/** Fields the UI may send when updating a note (timestamps may be FieldValue). */
+export type NoteUpdates = Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>> & {
+  updatedAt?: FieldValue | Date | null
+}
 
 export type UseBoardResult = {
   notes: Note[]
@@ -19,7 +25,7 @@ export type UseBoardResult = {
   addNote: (
     partial: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>,
   ) => Promise<void>
-  updateNote: (noteId: string, updates: Partial<Note>) => Promise<void>
+  updateNote: (noteId: string, updates: NoteUpdates) => Promise<void>
   deleteNote: (noteId: string) => Promise<void>
 }
 
@@ -147,18 +153,16 @@ export function useBoard(boardId: string | null): UseBoardResult {
   )
 
   const updateNote = useCallback(
-    async (noteId: string, updates: Partial<Note>) => {
+    async (noteId: string, updates: NoteUpdates) => {
       if (!boardId) return
 
-      // Never overwrite identity / creation time from partial updates
-      const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...fields } =
-        updates
+      const { updatedAt, ...fields } = updates
 
       try {
         await withWriteTimeout(
           updateDoc(noteDoc(boardId, noteId), {
             ...fields,
-            updatedAt: serverTimestamp(),
+            updatedAt: updatedAt ?? serverTimestamp(),
           }),
         )
       } catch (writeError) {

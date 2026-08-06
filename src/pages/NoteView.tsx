@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { NOTE_COLORS, type Note } from './BoardPage'
+import { NOTE_COLORS } from './BoardPage'
+import type { Note } from '../types'
 
 const NOTE_WIDTH = 200
 const NOTE_HEIGHT = 200
