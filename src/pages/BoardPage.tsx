@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useBoard } from '../hooks/useBoard'
 import type { Note } from '../types'
 import NoteView from './NoteView'
@@ -17,6 +18,7 @@ export const NOTE_COLORS = [
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const { notes, loading, error, addNote, updateNote } = useBoard(boardId ?? null)
+  const [copyStatus, setCopyStatus] = useState('')
 
   function handleAddNote() {
     void addNote({
@@ -39,26 +41,59 @@ export default function BoardPage() {
     void updateNote(id, { color })
   }
 
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyStatus('Link copied')
+    } catch {
+      setCopyStatus('Could not copy link')
+    }
+    window.setTimeout(() => setCopyStatus(''), 2000)
+  }
+
   return (
     <div className="board-page">
-      <h1>Board: {boardId}</h1>
-      <button type="button" onClick={handleAddNote} disabled={loading || !boardId}>
-        Add note
-      </button>
+      <div className="board-header">
+        <div>
+          <Link to="/" className="board-home-link">
+            ← Home
+          </Link>
+          <h1>Board: {boardId}</h1>
+        </div>
+        <div className="board-actions">
+          <button type="button" onClick={handleCopyLink} disabled={!boardId}>
+            Copy link
+          </button>
+          <button
+            type="button"
+            onClick={handleAddNote}
+            disabled={loading || !!error || !boardId}
+          >
+            Add note
+          </button>
+        </div>
+      </div>
 
-      {loading && <p>Loading board…</p>}
-      {error && <p>Error: {error.message}</p>}
+      {copyStatus && <p className="board-status">{copyStatus}</p>}
+      {loading && <p className="board-status">Loading board…</p>}
+      {error && (
+        <p className="board-error" role="alert">
+          Could not load board: {error.message}
+        </p>
+      )}
 
       <div className="board-canvas">
-        {notes.map((note) => (
-          <NoteView
-            key={note.id}
-            note={note}
-            onMove={handleMoveNote}
-            onUpdateText={handleUpdateNoteText}
-            onUpdateColor={handleUpdateNoteColor}
-          />
-        ))}
+        {!loading &&
+          !error &&
+          notes.map((note) => (
+            <NoteView
+              key={note.id}
+              note={note}
+              onMove={handleMoveNote}
+              onUpdateText={handleUpdateNoteText}
+              onUpdateColor={handleUpdateNoteColor}
+            />
+          ))}
       </div>
     </div>
   )

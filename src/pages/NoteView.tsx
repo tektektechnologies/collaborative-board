@@ -1,11 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { NOTE_COLORS, type Note } from './BoardPage'
 
+const NOTE_WIDTH = 200
+const NOTE_HEIGHT = 200
+
 type NoteViewProps = {
   note: Note
   onMove: (id: string, x: number, y: number) => void
   onUpdateText: (id: string, text: string) => void
   onUpdateColor: (id: string, color: string) => void
+}
+
+function clampPosition(
+  x: number,
+  y: number,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const maxX = Math.max(0, canvasWidth - NOTE_WIDTH)
+  const maxY = Math.max(0, canvasHeight - NOTE_HEIGHT)
+  return {
+    x: Math.min(Math.max(0, x), maxX),
+    y: Math.min(Math.max(0, y), maxY),
+  }
 }
 
 export default function NoteView({
@@ -31,6 +48,14 @@ export default function NoteView({
     setText(note.text)
   }, [note.text])
 
+  function getCanvasSize() {
+    const canvas = noteRef.current?.offsetParent as HTMLElement | null
+    if (!canvas) {
+      return { width: 0, height: 0 }
+    }
+    return { width: canvas.clientWidth, height: canvas.clientHeight }
+  }
+
   function getCanvasLocalPoint(event: React.PointerEvent<HTMLElement>) {
     const noteEl = noteRef.current
     if (!noteEl?.offsetParent) {
@@ -41,6 +66,17 @@ export default function NoteView({
       x: event.clientX - canvasRect.left,
       y: event.clientY - canvasRect.top,
     }
+  }
+
+  function positionFromPointer(event: React.PointerEvent<HTMLElement>) {
+    const local = getCanvasLocalPoint(event)
+    const { width, height } = getCanvasSize()
+    return clampPosition(
+      local.x - offsetRef.current.x,
+      local.y - offsetRef.current.y,
+      width,
+      height,
+    )
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -56,22 +92,16 @@ export default function NoteView({
 
   function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
     if (!isDraggingRef.current) return
-    const local = getCanvasLocalPoint(event)
-    setPosition({
-      x: local.x - offsetRef.current.x,
-      y: local.y - offsetRef.current.y,
-    })
+    setPosition(positionFromPointer(event))
   }
 
   function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
     if (!isDraggingRef.current) return
-    const local = getCanvasLocalPoint(event)
-    const x = local.x - offsetRef.current.x
-    const y = local.y - offsetRef.current.y
+    const next = positionFromPointer(event)
     isDraggingRef.current = false
-    setPosition({ x, y })
+    setPosition(next)
     setIsDragging(false)
-    onMove(note.id, x, y)
+    onMove(note.id, next.x, next.y)
   }
 
   function commitText() {
