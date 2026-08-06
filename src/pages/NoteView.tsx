@@ -4,10 +4,13 @@ import type { Note } from './BoardPage'
 type NoteViewProps = {
   note: Note
   onMove: (id: string, x: number, y: number) => void
+  onUpdateText: (id: string, text: string) => void
 }
 
-export default function NoteView({ note, onMove }: NoteViewProps) {
+export default function NoteView({ note, onMove, onUpdateText }: NoteViewProps) {
+  const noteRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x: note.x, y: note.y })
+  const [text, setText] = useState(note.text)
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef = useRef(false)
   const offsetRef = useRef({ x: 0, y: 0 })
@@ -18,12 +21,16 @@ export default function NoteView({ note, onMove }: NoteViewProps) {
     }
   }, [note.x, note.y])
 
-  function getCanvasLocalPoint(
-    event: React.PointerEvent<HTMLDivElement>,
-    noteEl: HTMLDivElement,
-  ) {
-    const canvas = noteEl.offsetParent as HTMLElement
-    const canvasRect = canvas.getBoundingClientRect()
+  useEffect(() => {
+    setText(note.text)
+  }, [note.text])
+
+  function getCanvasLocalPoint(event: React.PointerEvent<HTMLElement>) {
+    const noteEl = noteRef.current
+    if (!noteEl?.offsetParent) {
+      return { x: 0, y: 0 }
+    }
+    const canvasRect = (noteEl.offsetParent as HTMLElement).getBoundingClientRect()
     return {
       x: event.clientX - canvasRect.left,
       y: event.clientY - canvasRect.top,
@@ -31,20 +38,19 @@ export default function NoteView({ note, onMove }: NoteViewProps) {
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    const noteEl = event.currentTarget
-    const local = getCanvasLocalPoint(event, noteEl)
+    const local = getCanvasLocalPoint(event)
     offsetRef.current = {
       x: local.x - position.x,
       y: local.y - position.y,
     }
-    noteEl.setPointerCapture(event.pointerId)
+    event.currentTarget.setPointerCapture(event.pointerId)
     isDraggingRef.current = true
     setIsDragging(true)
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
     if (!isDraggingRef.current) return
-    const local = getCanvasLocalPoint(event, event.currentTarget)
+    const local = getCanvasLocalPoint(event)
     setPosition({
       x: local.x - offsetRef.current.x,
       y: local.y - offsetRef.current.y,
@@ -53,7 +59,7 @@ export default function NoteView({ note, onMove }: NoteViewProps) {
 
   function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
     if (!isDraggingRef.current) return
-    const local = getCanvasLocalPoint(event, event.currentTarget)
+    const local = getCanvasLocalPoint(event)
     const x = local.x - offsetRef.current.x
     const y = local.y - offsetRef.current.y
     isDraggingRef.current = false
@@ -62,19 +68,41 @@ export default function NoteView({ note, onMove }: NoteViewProps) {
     onMove(note.id, x, y)
   }
 
+  function commitText() {
+    if (text !== note.text) {
+      onUpdateText(note.id, text)
+    }
+  }
+
+  function handleTextKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      event.currentTarget.blur()
+    }
+  }
+
   return (
     <div
+      ref={noteRef}
       className={`note${isDragging ? ' note--dragging' : ''}`}
       style={{
         left: position.x,
         top: position.y,
         backgroundColor: note.color,
       }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
     >
-      <textarea value={note.text} readOnly />
+      <div
+        className="note-drag-handle"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      />
+      <textarea
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commitText}
+        onKeyDown={handleTextKeyDown}
+      />
     </div>
   )
 }

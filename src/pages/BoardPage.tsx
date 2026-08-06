@@ -34,6 +34,12 @@ export default function BoardPage() {
     )
   }
 
+  function handleUpdateNoteText(id: string, text: string) {
+    setNotes((prev) =>
+      prev.map((note) => (note.id === id ? { ...note, text } : note)),
+    )
+  }
+
   return (
     <div className="board-page">
       <h1>Board: {boardId}</h1>
@@ -43,7 +49,12 @@ export default function BoardPage() {
 
       <div className="board-canvas">
         {notes.map((note) => (
-          <NoteView key={note.id} note={note} onMove={handleMoveNote} />
+          <NoteView
+            key={note.id}
+            note={note}
+            onMove={handleMoveNote}
+            onUpdateText={handleUpdateNoteText}
+          />
         ))}
       </div>
     </div>
