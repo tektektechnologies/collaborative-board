@@ -65,11 +65,11 @@ export default function HomePage() {
       return 'Host: unknown'
     }
 
-    const name = board.hostDisplayName ?? 'Unknown'
     if (board.hostClientId === currentClientId) {
-      return `Host: you (${name})`
+      return 'Host'
     }
-    return `Host: ${name}`
+
+    return `Host: ${board.hostDisplayName ?? 'Unknown'}`
   }
 
   return (

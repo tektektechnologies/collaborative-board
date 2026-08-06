@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { serverTimestamp } from 'firebase/firestore'
+import { onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { boardDoc } from '../firebase'
 import { useBoard } from '../hooks/useBoard'
 import { usePresence, type Presence } from '../hooks/usePresence'
 import type { Note } from '../types'
@@ -58,6 +59,23 @@ export default function BoardPage() {
   const { clientId, displayName, peers, setCursor, setActiveNoteId } =
     usePresence(boardId ?? null)
   const [copyStatus, setCopyStatus] = useState('')
+  const [hostClientId, setHostClientId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!boardId) {
+      setHostClientId(null)
+      return
+    }
+
+    const unsubscribe = onSnapshot(boardDoc(boardId), (snapshot) => {
+      const data = snapshot.data()
+      setHostClientId(
+        typeof data?.hostClientId === 'string' ? data.hostClientId : null,
+      )
+    })
+
+    return unsubscribe
+  }, [boardId])
 
   function handleAddNote() {
     void addNote({
@@ -114,6 +132,20 @@ export default function BoardPage() {
     window.setTimeout(() => setCopyStatus(''), 2000)
   }
 
+  function presenceChipLabel(person: {
+    clientId: string
+    displayName: string
+    isSelf?: boolean
+  }) {
+    if (hostClientId && person.clientId === hostClientId) {
+      return 'Host'
+    }
+    if (person.isSelf) {
+      return `You (${presenceLabel(person.displayName)})`
+    }
+    return person.displayName
+  }
+
   function renderPresenceChip(person: {
     clientId: string
     displayName: string
@@ -123,9 +155,7 @@ export default function BoardPage() {
     return (
       <li key={person.clientId} className="presence-chip" title={person.displayName}>
         <span className="presence-dot" style={{ backgroundColor: color }} />
-        <span>
-          {person.isSelf ? `You (${presenceLabel(person.displayName)})` : person.displayName}
-        </span>
+        <span>{presenceChipLabel(person)}</span>
       </li>
     )
   }
@@ -134,7 +164,8 @@ export default function BoardPage() {
     if (peer.cursorX == null || peer.cursorY == null) return null
 
     const color = presenceColor(peer.clientId)
-    const label = presenceLabel(peer.displayName)
+    const isHost = hostClientId === peer.clientId
+    const label = isHost ? 'Host' : presenceLabel(peer.displayName)
 
     return (
       <div
@@ -145,7 +176,7 @@ export default function BoardPage() {
           top: peer.cursorY,
           backgroundColor: color,
         }}
-        title={peer.displayName}
+        title={isHost ? 'Host' : peer.displayName}
       >
         <span className="remote-cursor-label" style={{ backgroundColor: color }}>
           {label}
