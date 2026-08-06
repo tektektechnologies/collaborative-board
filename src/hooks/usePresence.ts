@@ -7,6 +7,10 @@ import {
   type Timestamp,
 } from 'firebase/firestore'
 import { presenceCollection, presenceDoc } from '../firebase'
+import {
+  getOrCreateClientId,
+  getOrCreateDisplayName,
+} from '../clientIdentity'
 
 export type Presence = {
   clientId: string
@@ -37,9 +41,6 @@ const STALE_AFTER_MS = 30_000
 // Avoid writing on every mousemove — throttle cursor presence updates.
 const CURSOR_WRITE_THROTTLE_MS = 100
 
-const CLIENT_ID_STORAGE_KEY = 'collaborative-board:clientId'
-const DISPLAY_NAME_STORAGE_KEY = 'collaborative-board:displayName'
-
 function toDate(value: unknown): Date | null {
   if (!value) return null
   if (value instanceof Date) return value
@@ -47,24 +48,6 @@ function toDate(value: unknown): Date | null {
     return (value as Timestamp).toDate()
   }
   return null
-}
-
-function getOrCreateClientId(): string {
-  const existing = sessionStorage.getItem(CLIENT_ID_STORAGE_KEY)
-  if (existing) return existing
-
-  const clientId = crypto.randomUUID()
-  sessionStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId)
-  return clientId
-}
-
-function getOrCreateDisplayName(clientId: string): string {
-  const existing = sessionStorage.getItem(DISPLAY_NAME_STORAGE_KEY)
-  if (existing) return existing
-
-  const displayName = `Guest ${clientId.slice(0, 4)}`
-  sessionStorage.setItem(DISPLAY_NAME_STORAGE_KEY, displayName)
-  return displayName
 }
 
 function mapPresenceDoc(id: string, data: Record<string, unknown>): Presence {

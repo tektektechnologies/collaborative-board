@@ -34,8 +34,15 @@
   gap: 0.5rem;
 }
 
+.board-list-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
 .board-list-item {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.75rem 1rem;
@@ -43,6 +50,7 @@
   border-radius: 8px;
   background: #fafafa;
   color: inherit;
+  min-width: 0;
 }
 
 .board-list-item:hover {
@@ -58,4 +66,22 @@
 .board-list-meta {
   font-size: 0.85rem;
   color: #666;
+}
+
+.board-host {
+  font-weight: 600;
+  color: #374151;
+}
+
+.board-delete {
+  flex: 0 0 auto;
+  align-self: stretch;
+  padding: 0.5rem 0.85rem;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.board-delete:hover:not(:disabled) {
+  border-color: #f87171;
 }
