@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { loadNotes, saveNotes, type Note } from '../notesStorage'
+import { useBoard } from '../hooks/useBoard'
+import type { Note } from '../types'
 import NoteView from './NoteView'
 import './BoardPage.css'
 
@@ -16,59 +16,38 @@ export const NOTE_COLORS = [
 
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
-  const [notes, setNotes] = useState<Note[]>([])
-  const [hasLoaded, setHasLoaded] = useState(false)
-
-  useEffect(() => {
-    if (!boardId) return
-
-    setHasLoaded(false)
-    setNotes(loadNotes(boardId))
-    setHasLoaded(true)
-  }, [boardId])
-
-  useEffect(() => {
-    if (!boardId || !hasLoaded) return
-    saveNotes(boardId, notes)
-  }, [boardId, notes, hasLoaded])
+  const { notes, loading, error, addNote, updateNote } = useBoard(boardId ?? null)
 
   function handleAddNote() {
-    setNotes((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        x: 100,
-        y: 100,
-        text: 'New note',
-        color: NOTE_COLORS[0],
-      },
-    ])
+    void addNote({
+      x: 100,
+      y: 100,
+      text: 'New note',
+      color: NOTE_COLORS[0],
+    })
   }
 
   function handleMoveNote(id: string, x: number, y: number) {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, x, y } : note)),
-    )
+    void updateNote(id, { x, y })
   }
 
   function handleUpdateNoteText(id: string, text: string) {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, text } : note)),
-    )
+    void updateNote(id, { text })
   }
 
   function handleUpdateNoteColor(id: string, color: string) {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, color } : note)),
-    )
+    void updateNote(id, { color })
   }
 
   return (
     <div className="board-page">
       <h1>Board: {boardId}</h1>
-      <button type="button" onClick={handleAddNote}>
+      <button type="button" onClick={handleAddNote} disabled={loading || !boardId}>
         Add note
       </button>
+
+      {loading && <p>Loading board…</p>}
+      {error && <p>Error: {error.message}</p>}
 
       <div className="board-canvas">
         {notes.map((note) => (

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { onSnapshot, setDoc } from 'firebase/firestore'
 import { boardDoc } from '../firebase'
-import type { Note } from '../notesStorage'
+import type { Note } from '../types'
 
 export type UseBoardResult = {
   notes: Note[]
