@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import NoteView from './NoteView'
 import './BoardPage.css'
 
-type Note = {
+export type Note = {
   id: string
   x: number
   y: number
@@ -27,6 +28,12 @@ export default function BoardPage() {
     ])
   }
 
+  function handleMoveNote(id: string, x: number, y: number) {
+    setNotes((prev) =>
+      prev.map((note) => (note.id === id ? { ...note, x, y } : note)),
+    )
+  }
+
   return (
     <div className="board-page">
       <h1>Board: {boardId}</h1>
@@ -36,17 +43,7 @@ export default function BoardPage() {
 
       <div className="board-canvas">
         {notes.map((note) => (
-          <div
-            key={note.id}
-            className="note"
-            style={{
-              left: note.x,
-              top: note.y,
-              backgroundColor: note.color,
-            }}
-          >
-            <textarea value={note.text} readOnly />
-          </div>
+          <NoteView key={note.id} note={note} onMove={handleMoveNote} />
         ))}
       </div>
     </div>

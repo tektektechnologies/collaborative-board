@@ -21,6 +21,15 @@
   box-sizing: border-box;
   padding: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.note--dragging {
+  cursor: grabbing;
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .note textarea {
@@ -32,4 +41,5 @@
   font: inherit;
   color: inherit;
   outline: none;
+  pointer-events: none;
 }
