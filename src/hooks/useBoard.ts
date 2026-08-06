@@ -9,6 +9,7 @@ import {
   updateDoc,
   type FieldValue,
   type Timestamp,
+  type UpdateData,
 } from 'firebase/firestore'
 import { noteDoc, notesCollection } from '../firebase'
 import type { Note } from '../types'
@@ -152,18 +153,39 @@ export function useBoard(boardId: string | null): UseBoardResult {
     [boardId],
   )
 
+  // Conflict strategy for concurrent edits on the SAME note:
+  // Firestore updateDoc is last-write-wins per field/document. If two clients
+  // both update `text`, the later server write wins and onSnapshot replaces
+  // the loser's local text. That is acceptable here: sticky-note text is not
+  // character-merged (no OT/CRDT). Edits to *different* notes (or different
+  // fields on the same note, e.g. text vs x/y) do not overwrite each other
+  // because we only send the changed fields in a partial updateDoc.
   const updateNote = useCallback(
     async (noteId: string, updates: NoteUpdates) => {
       if (!boardId) return
 
       const { updatedAt, ...fields } = updates
 
+      // Build a partial payload — never setDoc the whole note, so untouched
+      // fields (e.g. color while editing text) are preserved on the server.
+      const partialUpdate: UpdateData<{
+        x: number
+        y: number
+        text: string
+        color: string
+        updatedAt: FieldValue | Date
+      }> = {
+        updatedAt: updatedAt ?? serverTimestamp(),
+      }
+      for (const [key, value] of Object.entries(fields)) {
+        if (value !== undefined) {
+          ;(partialUpdate as Record<string, unknown>)[key] = value
+        }
+      }
+
       try {
         await withWriteTimeout(
-          updateDoc(noteDoc(boardId, noteId), {
-            ...fields,
-            updatedAt: updatedAt ?? serverTimestamp(),
-          }),
+          updateDoc(noteDoc(boardId, noteId), partialUpdate),
         )
       } catch (writeError) {
         const err =

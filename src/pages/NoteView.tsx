@@ -120,10 +120,15 @@ export default function NoteView({
     }
   }
 
+  const updatedAtLabel = note.updatedAt
+    ? `Last updated: ${note.updatedAt.toLocaleString()}`
+    : 'Not updated yet'
+
   return (
     <div
       ref={noteRef}
       className={`note${isDragging ? ' note--dragging' : ''}`}
+      title={updatedAtLabel}
       style={{
         left: position.x,
         top: position.y,
