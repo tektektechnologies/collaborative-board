@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import './BoardPage.css'
 
 type Note = {
   id: string
@@ -27,12 +28,27 @@ export default function BoardPage() {
   }
 
   return (
-    <div>
+    <div className="board-page">
       <h1>Board: {boardId}</h1>
       <button type="button" onClick={handleAddNote}>
         Add note
       </button>
-      <pre>{JSON.stringify(notes, null, 2)}</pre>
+
+      <div className="board-canvas">
+        {notes.map((note) => (
+          <div
+            key={note.id}
+            className="note"
+            style={{
+              left: note.x,
+              top: note.y,
+              backgroundColor: note.color,
+            }}
+          >
+            <textarea value={note.text} readOnly />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
