@@ -39,7 +39,8 @@ const HEARTBEAT_MS = 5000
 const STALE_AFTER_MS = 30_000
 
 // Avoid writing on every mousemove — throttle cursor presence updates.
-const CURSOR_WRITE_THROTTLE_MS = 100
+// Keep this modest so presence writes don't compete with note text updates.
+const CURSOR_WRITE_THROTTLE_MS = 250
 
 function toDate(value: unknown): Date | null {
   if (!value) return null

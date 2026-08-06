@@ -5,6 +5,10 @@ import type { Note } from '../types'
 const NOTE_WIDTH = 200
 const NOTE_HEIGHT = 200
 
+// Push text to Firestore while typing so other clients see updates quickly.
+// Still commit immediately on blur / Enter.
+const TEXT_SYNC_DEBOUNCE_MS = 250
+
 type NoteViewProps = {
   note: Note
   onMove: (id: string, x: number, y: number) => void
@@ -43,7 +47,11 @@ export default function NoteView({
   const [text, setText] = useState(note.text)
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef = useRef(false)
+  const isEditingRef = useRef(false)
   const offsetRef = useRef({ x: 0, y: 0 })
+  const textRef = useRef(note.text)
+  const lastSentTextRef = useRef(note.text)
+  const syncTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!isDraggingRef.current) {
@@ -51,9 +59,22 @@ export default function NoteView({
     }
   }, [note.x, note.y])
 
+  // Don't clobber the caret while this client is actively typing.
   useEffect(() => {
-    setText(note.text)
+    if (!isEditingRef.current) {
+      setText(note.text)
+      textRef.current = note.text
+      lastSentTextRef.current = note.text
+    }
   }, [note.text])
+
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current != null) {
+        window.clearTimeout(syncTimeoutRef.current)
+      }
+    }
+  }, [])
 
   function getCanvasSize() {
     const canvas = noteRef.current?.offsetParent as HTMLElement | null
@@ -111,10 +132,35 @@ export default function NoteView({
     onMove(note.id, next.x, next.y)
   }
 
-  function commitText() {
-    if (text !== note.text) {
-      onUpdateText(note.id, text)
+  function flushText(nextText: string = textRef.current) {
+    if (syncTimeoutRef.current != null) {
+      window.clearTimeout(syncTimeoutRef.current)
+      syncTimeoutRef.current = null
     }
+    if (nextText !== lastSentTextRef.current) {
+      lastSentTextRef.current = nextText
+      onUpdateText(note.id, nextText)
+    }
+  }
+
+  function scheduleTextSync(nextText: string) {
+    if (syncTimeoutRef.current != null) {
+      window.clearTimeout(syncTimeoutRef.current)
+    }
+    syncTimeoutRef.current = window.setTimeout(() => {
+      syncTimeoutRef.current = null
+      if (nextText !== lastSentTextRef.current) {
+        lastSentTextRef.current = nextText
+        onUpdateText(note.id, nextText)
+      }
+    }, TEXT_SYNC_DEBOUNCE_MS)
+  }
+
+  function handleTextChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+    const nextText = event.target.value
+    textRef.current = nextText
+    setText(nextText)
+    scheduleTextSync(nextText)
   }
 
   function handleTextKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -158,10 +204,14 @@ export default function NoteView({
       </div>
       <textarea
         value={text}
-        onChange={(event) => setText(event.target.value)}
-        onFocus={() => onFocusNote?.()}
+        onChange={handleTextChange}
+        onFocus={() => {
+          isEditingRef.current = true
+          onFocusNote?.()
+        }}
         onBlur={() => {
-          commitText()
+          isEditingRef.current = false
+          flushText()
           onBlurNote?.()
         }}
         onKeyDown={handleTextKeyDown}
