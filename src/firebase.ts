@@ -1,5 +1,5 @@
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app'
-import { doc, getFirestore } from 'firebase/firestore'
+import { collection, doc, getFirestore } from 'firebase/firestore'
 
 /**
  * Vite only exposes env vars prefixed with VITE_ to the client.
@@ -35,6 +35,11 @@ const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) 
 
 // Single Firestore instance shared by the app
 export const db = getFirestore(app)
+
+/** boards collection */
+export function boardsCollection() {
+  return collection(db, 'boards')
+}
 
 /** boards/<boardId> document reference */
 export function boardDoc(boardId: string) {

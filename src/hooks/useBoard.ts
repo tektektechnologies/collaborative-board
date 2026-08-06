@@ -9,6 +9,7 @@ export type UseBoardResult = {
   error: Error | null
   addNote: (note: Omit<Note, 'id'>) => Promise<void>
   updateNote: (noteId: string, updates: Partial<Note>) => Promise<void>
+  deleteNote: (noteId: string) => Promise<void>
 }
 
 const SERVER_SYNC_TIMEOUT_MS = 8000
@@ -129,5 +130,15 @@ export function useBoard(boardId: string | null): UseBoardResult {
     [boardId, writeNotes],
   )
 
-  return { notes, loading, error, addNote, updateNote }
+  const deleteNote = useCallback(
+    async (noteId: string) => {
+      if (!boardId) return
+
+      const nextNotes = notesRef.current.filter((note) => note.id !== noteId)
+      await writeNotes(nextNotes)
+    },
+    [boardId, writeNotes],
+  )
+
+  return { notes, loading, error, addNote, updateNote, deleteNote }
 }

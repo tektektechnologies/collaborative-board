@@ -17,7 +17,9 @@ export const NOTE_COLORS = [
 
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
-  const { notes, loading, error, addNote, updateNote } = useBoard(boardId ?? null)
+  const { notes, loading, error, addNote, updateNote, deleteNote } = useBoard(
+    boardId ?? null,
+  )
   const [copyStatus, setCopyStatus] = useState('')
 
   function handleAddNote() {
@@ -39,6 +41,10 @@ export default function BoardPage() {
 
   function handleUpdateNoteColor(id: string, color: string) {
     void updateNote(id, { color })
+  }
+
+  function handleDeleteNote(id: string) {
+    void deleteNote(id)
   }
 
   async function handleCopyLink() {
@@ -92,6 +98,7 @@ export default function BoardPage() {
               onMove={handleMoveNote}
               onUpdateText={handleUpdateNoteText}
               onUpdateColor={handleUpdateNoteColor}
+              onDelete={handleDeleteNote}
             />
           ))}
       </div>

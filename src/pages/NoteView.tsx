@@ -9,6 +9,7 @@ type NoteViewProps = {
   onMove: (id: string, x: number, y: number) => void
   onUpdateText: (id: string, text: string) => void
   onUpdateColor: (id: string, color: string) => void
+  onDelete: (id: string) => void
 }
 
 function clampPosition(
@@ -30,6 +31,7 @@ export default function NoteView({
   onMove,
   onUpdateText,
   onUpdateColor,
+  onDelete,
 }: NoteViewProps) {
   const noteRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x: note.x, y: note.y })
@@ -127,12 +129,23 @@ export default function NoteView({
         backgroundColor: note.color,
       }}
     >
-      <div
-        className="note-drag-handle"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-      />
+      <div className="note-toolbar">
+        <div
+          className="note-drag-handle"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+        />
+        <button
+          type="button"
+          className="note-delete"
+          aria-label="Delete note"
+          title="Delete note"
+          onClick={() => onDelete(note.id)}
+        >
+          ×
+        </button>
+      </div>
       <textarea
         value={text}
         onChange={(event) => setText(event.target.value)}

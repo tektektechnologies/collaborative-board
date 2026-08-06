@@ -6,3 +6,56 @@
 .home-page p {
   margin: 0.75rem 0 1.25rem;
 }
+
+.home-error {
+  color: #b91c1c;
+}
+
+.board-list-section {
+  margin-top: 2rem;
+}
+
+.board-list-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.board-list-empty {
+  margin: 0;
+  color: #666;
+}
+
+.board-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.board-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #fafafa;
+  color: inherit;
+}
+
+.board-list-item:hover {
+  border-color: #646cff;
+}
+
+.board-list-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.board-list-meta {
+  font-size: 0.85rem;
+  color: #666;
+}

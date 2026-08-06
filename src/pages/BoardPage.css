@@ -63,9 +63,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.note-drag-handle {
-  flex: 0 0 1.25rem;
+.note-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   margin: 0 -0.25rem 0.25rem;
+}
+
+.note-drag-handle {
+  flex: 1;
+  height: 1.25rem;
   border-radius: 2px;
   cursor: grab;
   touch-action: none;
@@ -75,6 +82,25 @@
 
 .note--dragging .note-drag-handle {
   cursor: grabbing;
+}
+
+.note-delete {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  color: #7f1d1d;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.note-delete:hover {
+  background: rgba(185, 28, 28, 0.15);
+  border-color: transparent;
 }
 
 .note textarea {
